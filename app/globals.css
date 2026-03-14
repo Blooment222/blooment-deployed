@@ -1,0 +1,400 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================ */
+/* Prevención de Scroll Horizontal Global */
+/* ============================================ */
+
+body {
+  overflow-x: hidden;
+}
+
+/* ============================================ */
+/* Confirmación Visual Local del Botón */
+/* ============================================ */
+
+/* Micro-pulse del botón al hacer clic */
+@keyframes button-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.button-pulse {
+  animation: button-pulse 0.2s ease-out;
+}
+
+/* Destellos elegantes - optimización de hardware */
+.sparkle-element {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  filter: drop-shadow(0 0 4px rgba(245, 182, 198, 0.4));
+}
+
+/* ============================================ */
+/* Estilos personalizados para Google Maps Autocomplete */
+/* ============================================ */
+
+/* Contenedor principal de sugerencias - z-index MÁXIMO para modales */
+.pac-container {
+  background-color: white;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(245, 182, 198, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  border: 2px solid #F5B6C6 !important;
+  margin-top: -2px !important; /* Pegado justo debajo del input */
+  padding: 4px 0 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif !important;
+  z-index: 100000 !important; /* Por encima de todo */
+  position: absolute !important; /* Relativo al contenedor padre */
+  display: block !important;
+  pointer-events: auto !important; /* Asegurar que los clicks funcionen */
+}
+
+/* FORZAR ocultación completa cuando está vacío o debe esconderse */
+.pac-container:empty,
+.pac-container[style*="display: none"],
+.pac-container[style*="visibility: hidden"],
+.pac-container.pac-hidden {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  transform: scale(0) !important;
+  pointer-events: none !important;
+}
+
+/* Eliminar borde superior del contenedor */
+.pac-container:after {
+  display: none !important;
+}
+
+/* Cada item de sugerencia */
+.pac-item {
+  padding: 12px 16px !important;
+  line-height: 1.4 !important;
+  cursor: pointer !important;
+  border: none !important;
+  transition: all 0.2s ease !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+  margin: 2px 8px !important;
+  pointer-events: auto !important; /* Asegurar clics */
+  user-select: none !important; /* Prevenir selección de texto */
+  -webkit-tap-highlight-color: transparent !important; /* Mejor en móvil */
+}
+
+/* Hover en item */
+.pac-item:hover {
+  background-color: #FFF5F7 !important;
+  transform: translateX(4px);
+}
+
+/* Item seleccionado */
+.pac-item-selected,
+.pac-item-selected:hover {
+  background-color: #F5B6C6 !important;
+  color: white !important;
+}
+
+/* Texto resaltado (lo que escribió el usuario) */
+.pac-matched {
+  color: #F5B6C6 !important;
+  font-weight: 600 !important;
+}
+
+/* Texto resaltado cuando item está seleccionado */
+.pac-item-selected .pac-matched {
+  color: white !important;
+}
+
+/* Ícono de ubicación */
+.pac-icon {
+  background-image: none !important;
+  width: 20px !important;
+  height: 20px !important;
+  margin-right: 12px !important;
+  margin-top: 2px !important;
+}
+
+/* Agregar ícono personalizado */
+.pac-icon:before {
+  content: "📍";
+  font-size: 16px;
+  display: inline-block;
+}
+
+/* Query (dirección principal) */
+.pac-item-query {
+  color: #1a1a1a !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  margin-right: 4px !important;
+}
+
+/* Item seleccionado - texto de query */
+.pac-item-selected .pac-item-query {
+  color: white !important;
+}
+
+/* Texto secundario (ciudad, estado) */
+.pac-item span {
+  color: #666 !important;
+  font-size: 13px !important;
+}
+
+/* Texto secundario cuando está seleccionado */
+.pac-item-selected span {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Logo de Google (mantener visible pero discreto) */
+.pac-logo:after {
+  padding: 8px !important;
+  opacity: 0.6 !important;
+}
+
+/* Animación de entrada */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pac-container {
+  animation: fadeInDown 0.2s ease-out !important;
+}
+
+/* ============================================ */
+/* Fin de estilos de Google Maps Autocomplete */
+/* ============================================ */
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+        "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+        "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+        monospace;
+}
+
+.App {
+    text-align: center;
+}
+
+.App-logo {
+    height: 40vmin;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .App-logo {
+        animation: App-logo-spin infinite 20s linear;
+    }
+}
+
+.App-header {
+    background-color: #0f0f10;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(10px + 2vmin);
+    color: white;
+}
+
+.App-link {
+    color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+
+@layer base {
+  :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 222.2 47.4% 11.2%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 222.2 84% 4.9%;
+        --chart-1: 12 76% 61%;
+        --chart-2: 173 58% 39%;
+        --chart-3: 197 37% 24%;
+        --chart-4: 43 74% 66%;
+        --chart-5: 27 87% 67%;
+        --radius: 0.5rem;
+        --sidebar-background: 0 0% 98%;
+        --sidebar-foreground: 240 5.3% 26.1%;
+        --sidebar-primary: 240 5.9% 10%;
+        --sidebar-primary-foreground: 0 0% 98%;
+        --sidebar-accent: 240 4.8% 95.9%;
+        --sidebar-accent-foreground: 240 5.9% 10%;
+        --sidebar-border: 220 13% 91%;
+        --sidebar-ring: 217.2 91.2% 59.8%;
+    }
+  .dark {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 4.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 210 40% 98%;
+        --primary-foreground: 222.2 47.4% 11.2%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 212.7 26.8% 83.9%;
+        --chart-1: 220 70% 50%;
+        --chart-2: 160 60% 45%;
+        --chart-3: 30 80% 55%;
+        --chart-4: 280 65% 60%;
+        --chart-5: 340 75% 55%;
+        --sidebar-background: 240 5.9% 10%;
+        --sidebar-foreground: 240 4.8% 95.9%;
+        --sidebar-primary: 224.3 76.3% 48%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 240 3.7% 15.9%;
+        --sidebar-accent-foreground: 240 4.8% 95.9%;
+        --sidebar-border: 240 3.7% 15.9%;
+        --sidebar-ring: 217.2 91.2% 59.8%;
+    }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+}
+
+
+/* Animaciones para splash screen */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out;
+}
+
+.animate-fade-in-delay {
+  animation: fade-in 0.8s ease-out 0.3s both;
+}
+
+/* Safe area para dispositivos móviles */
+.safe-area-inset-bottom {
+
+
+/* Estilos globales para contenido de la tienda */
+.tienda-content h1,
+.tienda-content h2,
+.tienda-content h3 {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+/* Asegurar que el primer elemento no tenga margen superior */
+main > div > *:first-child {
+  margin-top: 0 !important;
+}
+
+/* Asegurar espacio suficiente en el último elemento antes del footer */
+main > div > *:last-child {
+  margin-bottom: 2rem !important;
+}
+
+/* Espaciado consistente para títulos */
+h1 {
+  @apply mb-4;
+}
+
+h2 {
+  @apply mb-3;
+}
+
+h3 {
+  @apply mb-2;
+}
+
+/* Espaciado para listas y grids al final de la página */
+main > div > div:last-child,
+main > div > section:last-child {
+  padding-bottom: 1.5rem !important;
+}
+
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}

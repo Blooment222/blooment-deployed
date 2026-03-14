@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Fondo transparente - NO hay ningún fondo -->
+  
+  <!-- Tallo principal -->
+  <path d="M100 180 Q95 130, 90 100 Q88 80, 85 60 Q83 40, 80 20" 
+        fill="none" 
+        stroke="#5a9d5a" 
+        stroke-width="6" 
+        stroke-linecap="round"/>
+  
+  <!-- Rama izquierda -->
+  <path d="M85 80 Q70 85, 60 90" 
+        fill="none" 
+        stroke="#5a9d5a" 
+        stroke-width="4" 
+        stroke-linecap="round"/>
+  
+  <!-- Rama derecha -->
+  <path d="M88 100 Q105 105, 120 110" 
+        fill="none" 
+        stroke="#5a9d5a" 
+        stroke-width="4" 
+        stroke-linecap="round"/>
+  
+  <!-- Rama superior derecha -->
+  <path d="M83 50 Q95 45, 105 40" 
+        fill="none" 
+        stroke="#5a9d5a" 
+        stroke-width="3" 
+        stroke-linecap="round"/>
+  
+  <!-- Flor inferior izquierda - pétalos -->
+  <ellipse cx="55" cy="95" rx="8" ry="14" fill="#f5a3c7" transform="rotate(-30 55 95)"/>
+  <ellipse cx="65" cy="88" rx="8" ry="14" fill="#f5a3c7" transform="rotate(20 65 88)"/>
+  <ellipse cx="62" cy="100" rx="8" ry="14" fill="#f5a3c7" transform="rotate(-60 62 100)"/>
+  <ellipse cx="55" cy="90" rx="8" ry="14" fill="#f5a3c7" transform="rotate(60 55 90)"/>
+  <circle cx="60" cy="93" r="5" fill="#e06fa0"/>
+  
+  <!-- Flor central derecha - pétalos -->
+  <ellipse cx="115" cy="112" rx="9" ry="15" fill="#f5a3c7" transform="rotate(-20 115 112)"/>
+  <ellipse cx="125" cy="108" rx="9" ry="15" fill="#f5a3c7" transform="rotate(30 125 108)"/>
+  <ellipse cx="122" cy="118" rx="9" ry="15" fill="#f5a3c7" transform="rotate(-70 122 118)"/>
+  <ellipse cx="115" cy="115" rx="9" ry="15" fill="#f5a3c7" transform="rotate(70 115 115)"/>
+  <circle cx="120" cy="113" r="6" fill="#e06fa0"/>
+  
+  <!-- Flor superior central - pétalos -->
+  <ellipse cx="75" cy="25" rx="7" ry="12" fill="#f5a3c7" transform="rotate(-35 75 25)"/>
+  <ellipse cx="83" cy="20" rx="7" ry="12" fill="#f5a3c7" transform="rotate(15 83 20)"/>
+  <ellipse cx="80" cy="30" rx="7" ry="12" fill="#f5a3c7" transform="rotate(-65 80 30)"/>
+  <ellipse cx="75" cy="23" rx="7" ry="12" fill="#f5a3c7" transform="rotate(55 75 23)"/>
+  <circle cx="79" cy="25" r="4" fill="#e06fa0"/>
+  
+  <!-- Flor superior derecha - pétalos -->
+  <ellipse cx="100" cy="42" rx="7" ry="12" fill="#f5a3c7" transform="rotate(-25 100 42)"/>
+  <ellipse cx="108" cy="38" rx="7" ry="12" fill="#f5a3c7" transform="rotate(25 108 38)"/>
+  <ellipse cx="105" cy="48" rx="7" ry="12" fill="#f5a3c7" transform="rotate(-75 105 48)"/>
+  <ellipse cx="100" cy="40" rx="7" ry="12" fill="#f5a3c7" transform="rotate(65 100 40)"/>
+  <circle cx="104" cy="42" r="4" fill="#e06fa0"/>
+  
+  <!-- Hojas pequeñas en tallo -->
+  <ellipse cx="90" cy="70" rx="5" ry="10" fill="#6db86d" transform="rotate(45 90 70)"/>
+  <ellipse cx="87" cy="120" rx="4" ry="8" fill="#6db86d" transform="rotate(-45 87 120)"/>
+  <ellipse cx="92" cy="140" rx="5" ry="9" fill="#6db86d" transform="rotate(60 92 140)"/>
+</svg>
