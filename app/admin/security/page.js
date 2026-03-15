@@ -164,32 +164,28 @@ export default function SecurityPage() {
 
   // Función para verificar si se puede editar un usuario
   const canEdit = (admin) => {
+    // Solo SuperAdmins pueden editar
     if (!isSuperAdmin) return false
     
-    // SuperAdmins no pueden editar otros SuperAdmins
-    if (admin.rol === 'superadmin' && admin.email?.toLowerCase() !== user?.email?.toLowerCase()) {
-      return false
-    }
+    // NO se puede editar a otros SuperAdmins
+    if (admin.rol === 'superadmin') return false
     
+    // SÍ se puede editar colaboradores
     return true
   }
 
   // Función para verificar si se puede eliminar un usuario
   const canDelete = (admin) => {
+    // Solo SuperAdmins pueden eliminar
     if (!isSuperAdmin) return false
     
     const isTargetFundador = EMAILS_FUNDADORES.includes(admin.email?.toLowerCase())
     const isTargetSuperAdmin = admin.rol === 'superadmin'
     const isSelf = admin.email?.toLowerCase() === user?.email?.toLowerCase()
     
-    // Fundadores solo pueden eliminarse a sí mismos
-    if (isTargetFundador) {
-      return isSelf && isFundador
-    }
-    
-    // SuperAdmins no pueden eliminar otros SuperAdmins
-    if (isTargetSuperAdmin && !isSelf) {
-      return false
+    // Si es un SuperAdmin/Fundador, solo puede eliminarse a sí mismo
+    if (isTargetSuperAdmin || isTargetFundador) {
+      return isSelf // Solo mostrar botón en tu propia tarjeta
     }
     
     // Colaboradores pueden ser eliminados por SuperAdmins
