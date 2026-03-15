@@ -14,24 +14,31 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
-import { Shield, Key, UserPlus, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Shield, Key, UserPlus, Trash2, Eye, EyeOff, Pencil, AlertTriangle } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { useAuth } from '@/lib/auth-client'
+
+// Emails de fundadores protegidos
+const EMAILS_FUNDADORES = ['diegoah1107@gmail.com', 'maireyesguevara@gmail.com']
 
 export default function SecurityPage() {
   const router = useRouter()
   const [admins, setAdmins] = useState([])
   const [loading, setLoading] = useState(true)
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [adminToDelete, setAdminToDelete] = useState(null)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   
@@ -43,6 +50,11 @@ export default function SecurityPage() {
 
   const { toast } = useToast()
   const { user, getToken } = useAuth()
+
+  // Verificaciones de permisos
+  const isFundador = user && EMAILS_FUNDADORES.includes(user.email?.toLowerCase())
+  const isSuperAdmin = user?.rol === 'superadmin'
+  const superadminCount = admins.filter(a => a.rol === 'superadmin' && a.activo).length
 
   useEffect(() => {
     fetchAdmins()
@@ -109,22 +121,36 @@ export default function SecurityPage() {
     }
   }
 
-  const handleDeactivateAdmin = async (id, email) => {
-    if (!confirm(`¿Estás seguro de desactivar a ${email}?`)) return
+  const confirmDelete = (admin) => {
+    setAdminToDelete(admin)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteAdmin = async () => {
+    if (!adminToDelete) return
 
     try {
       const token = getToken()
-      const res = await fetch(`/api/security/admins/${id}`, {
+      const res = await fetch(`/api/security/admins/${adminToDelete.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       })
 
       if (res.ok) {
-        toast({ title: '✅ Administrador desactivado', description: `${email} ya no puede acceder al panel` })
+        toast({ 
+          title: '✅ Usuario eliminado', 
+          description: `${adminToDelete.nombre} ya no tiene acceso al panel` 
+        })
         fetchAdmins()
+      } else {
+        const data = await res.json()
+        toast({ title: 'Error', description: data.error || 'Error al eliminar', variant: 'destructive' })
       }
     } catch (error) {
-      toast({ title: 'Error', description: 'Error al desactivar', variant: 'destructive' })
+      toast({ title: 'Error', description: 'Error al eliminar', variant: 'destructive' })
+    } finally {
+      setDeleteDialogOpen(false)
+      setAdminToDelete(null)
     }
   }
 
@@ -134,6 +160,40 @@ export default function SecurityPage() {
     } catch {
       return {}
     }
+  }
+
+  // Función para verificar si se puede editar un usuario
+  const canEdit = (admin) => {
+    if (!isSuperAdmin) return false
+    
+    // SuperAdmins no pueden editar otros SuperAdmins
+    if (admin.rol === 'superadmin' && admin.email?.toLowerCase() !== user?.email?.toLowerCase()) {
+      return false
+    }
+    
+    return true
+  }
+
+  // Función para verificar si se puede eliminar un usuario
+  const canDelete = (admin) => {
+    if (!isSuperAdmin) return false
+    
+    const isTargetFundador = EMAILS_FUNDADORES.includes(admin.email?.toLowerCase())
+    const isTargetSuperAdmin = admin.rol === 'superadmin'
+    const isSelf = admin.email?.toLowerCase() === user?.email?.toLowerCase()
+    
+    // Fundadores solo pueden eliminarse a sí mismos
+    if (isTargetFundador) {
+      return isSelf && isFundador
+    }
+    
+    // SuperAdmins no pueden eliminar otros SuperAdmins
+    if (isTargetSuperAdmin && !isSelf) {
+      return false
+    }
+    
+    // Colaboradores pueden ser eliminados por SuperAdmins
+    return true
   }
 
   if (loading) {
@@ -161,6 +221,25 @@ export default function SecurityPage() {
         </div>
       </div>
 
+      {/* Info de SuperAdmins */}
+      <Card className="bg-purple-50 border-purple-200">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-purple-600" />
+              <span className="font-medium text-purple-700">SuperAdmins activos:</span>
+              <span className="text-purple-600">{superadminCount}/4</span>
+            </div>
+            {superadminCount >= 4 && (
+              <span className="text-xs text-orange-600 flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                Límite alcanzado
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 md:grid-cols-2">
         {/* Cambiar Contraseña */}
         <Card>
@@ -178,7 +257,7 @@ export default function SecurityPage() {
           </CardContent>
         </Card>
 
-        {/* Agregar Colaborador - Link a página completa */}
+        {/* Agregar Colaborador */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -199,85 +278,101 @@ export default function SecurityPage() {
         </Card>
       </div>
 
-      {/* Lista de Administradores */}
+      {/* Lista de Usuarios */}
       <Card>
         <CardHeader>
           <CardTitle>Usuarios con Acceso</CardTitle>
-          <CardDescription>Lista de administradores y colaboradores</CardDescription>
+          <CardDescription>Administradores y colaboradores del sistema</CardDescription>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead className="hidden sm:table-cell">Email</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead className="hidden md:table-cell">Permisos</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {admins.map((admin) => {
-                const permisos = parsePermisos(admin.permisos)
-                return (
-                  <TableRow key={admin.id}>
-                    <TableCell className="font-medium">
-                      <div>
-                        {admin.nombre}
-                        <p className="text-xs text-gray-500 sm:hidden">{admin.email}</p>
+        <CardContent>
+          <div className="space-y-3">
+            {admins.map((admin) => {
+              const permisos = parsePermisos(admin.permisos)
+              const isTargetFundador = EMAILS_FUNDADORES.includes(admin.email?.toLowerCase())
+              const isSelf = admin.email?.toLowerCase() === user?.email?.toLowerCase()
+              
+              return (
+                <div 
+                  key={admin.id} 
+                  className={`p-4 rounded-lg border-2 ${
+                    admin.rol === 'superadmin' 
+                      ? 'border-purple-200 bg-purple-50/50' 
+                      : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-gray-900">{admin.nombre}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          admin.rol === 'superadmin' 
+                            ? 'bg-purple-200 text-purple-700' 
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {admin.rol === 'superadmin' ? 'SuperAdmin' : 'Colaborador'}
+                        </span>
+                        {isTargetFundador && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                            Fundador
+                          </span>
+                        )}
+                        {isSelf && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                            Tú
+                          </span>
+                        )}
+                        {!admin.activo && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                            Inactivo
+                          </span>
+                        )}
                       </div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">{admin.email}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        admin.rol === 'superadmin' 
-                          ? 'bg-purple-100 text-purple-700' 
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
-                        {admin.rol === 'superadmin' ? 'Super Admin' : 'Colaborador'}
-                      </span>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {admin.rol === 'superadmin' ? (
-                        <span className="text-xs text-gray-500">Acceso total</span>
-                      ) : (
-                        <div className="flex flex-wrap gap-1">
-                          {Object.entries(permisos).filter(([_, v]) => v).slice(0, 3).map(([key]) => (
-                            <span key={key} className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">
+                      <p className="text-sm text-gray-500 mt-1 truncate">{admin.email}</p>
+                      
+                      {admin.rol === 'colaborador' && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {Object.entries(permisos).filter(([_, v]) => v).map(([key]) => (
+                            <span key={key} className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-600">
                               {key}
                             </span>
                           ))}
-                          {Object.entries(permisos).filter(([_, v]) => v).length > 3 && (
-                            <span className="text-xs text-gray-400">+más</span>
-                          )}
                         </div>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        admin.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                      }`}>
-                        {admin.activo ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {admin.activo && admin.rol !== 'superadmin' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeactivateAdmin(admin.id, admin.email)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      {admin.rol === 'superadmin' && (
+                        <p className="text-xs text-purple-600 mt-2">Acceso completo a todas las secciones</p>
                       )}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                    </div>
+                    
+                    {/* Botones de acción */}
+                    {admin.activo && (
+                      <div className="flex gap-2 flex-shrink-0">
+                        {canEdit(admin) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/admin/security/editar/${admin.id}`)}
+                            className="h-9 w-9 p-0"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {canDelete(admin) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => confirmDelete(admin)}
+                            className="h-9 w-9 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </CardContent>
       </Card>
 
@@ -343,6 +438,32 @@ export default function SecurityPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog: Confirmar Eliminación */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              ¿Eliminar usuario?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de eliminar a <strong>{adminToDelete?.nombre}</strong>?
+              <br />
+              <span className="text-red-600">Perderá el acceso de inmediato y no podrá recuperarlo.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAdmin}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Sí, eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

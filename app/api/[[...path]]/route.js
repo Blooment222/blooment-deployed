@@ -432,6 +432,126 @@ async function handleRoute(request, { params }) {
       return handleCORS(NextResponse.json(admin, { status: 201 }))
     }
 
+    // Emails de fundadores protegidos
+    const EMAILS_FUNDADORES = ['diegoah1107@gmail.com', 'maireyesguevara@gmail.com']
+
+    // GET /api/security/admins/:id - Obtener un admin específico (PROTEGIDO)
+    if (route.match(/^\/security\/admins\/[^\/]+$/) && method === 'GET') {
+      const authResult = await verifyAuth(request)
+      if (!authResult.authenticated) {
+        return handleCORS(NextResponse.json({ error: "No autorizado" }, { status: 401 }))
+      }
+
+      const adminId = route.split('/').pop()
+      const admin = await prisma.administrador.findUnique({
+        where: { id: adminId },
+        select: { id: true, nombre: true, email: true, activo: true, rol: true, permisos: true, createdAt: true }
+      })
+
+      if (!admin) {
+        return handleCORS(NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 }))
+      }
+
+      return handleCORS(NextResponse.json(admin))
+    }
+
+    // PUT /api/security/admins/:id - Editar un admin (PROTEGIDO - con reglas de jerarquía)
+    if (route.match(/^\/security\/admins\/[^\/]+$/) && method === 'PUT') {
+      const authResult = await verifyAuth(request)
+      if (!authResult.authenticated) {
+        return handleCORS(NextResponse.json({ error: "No autorizado" }, { status: 401 }))
+      }
+
+      const currentAdmin = await prisma.administrador.findUnique({
+        where: { id: authResult.user.id }
+      })
+
+      if (!currentAdmin || currentAdmin.rol !== 'superadmin') {
+        return handleCORS(NextResponse.json({ error: "Solo los SuperAdmins pueden editar usuarios" }, { status: 403 }))
+      }
+
+      const adminId = route.split('/').pop()
+      const targetAdmin = await prisma.administrador.findUnique({ where: { id: adminId } })
+
+      if (!targetAdmin) {
+        return handleCORS(NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 }))
+      }
+
+      // Regla: SuperAdmins no pueden editar otros SuperAdmins
+      if (targetAdmin.rol === 'superadmin' && targetAdmin.id !== currentAdmin.id) {
+        return handleCORS(NextResponse.json({ error: "No puedes editar a otro SuperAdmin" }, { status: 403 }))
+      }
+
+      const body = await request.json()
+
+      // Verificar límite de SuperAdmins si se está promoviendo
+      if (body.rol === 'superadmin' && targetAdmin.rol !== 'superadmin') {
+        const superadminCount = await prisma.administrador.count({
+          where: { rol: 'superadmin', activo: true }
+        })
+        if (superadminCount >= 4) {
+          return handleCORS(NextResponse.json({ error: "Límite de 4 SuperAdmins alcanzado" }, { status: 400 }))
+        }
+      }
+
+      const updated = await prisma.administrador.update({
+        where: { id: adminId },
+        data: {
+          nombre: body.nombre || targetAdmin.nombre,
+          rol: body.rol || targetAdmin.rol,
+          permisos: body.permisos || targetAdmin.permisos
+        },
+        select: { id: true, nombre: true, email: true, activo: true, rol: true, permisos: true }
+      })
+
+      return handleCORS(NextResponse.json(updated))
+    }
+
+    // DELETE /api/security/admins/:id - Eliminar/Desactivar admin (PROTEGIDO - con reglas de jerarquía)
+    if (route.match(/^\/security\/admins\/[^\/]+$/) && method === 'DELETE') {
+      const authResult = await verifyAuth(request)
+      if (!authResult.authenticated) {
+        return handleCORS(NextResponse.json({ error: "No autorizado" }, { status: 401 }))
+      }
+
+      const currentAdmin = await prisma.administrador.findUnique({
+        where: { id: authResult.user.id }
+      })
+
+      if (!currentAdmin || currentAdmin.rol !== 'superadmin') {
+        return handleCORS(NextResponse.json({ error: "Solo los SuperAdmins pueden eliminar usuarios" }, { status: 403 }))
+      }
+
+      const adminId = route.split('/').pop()
+      const targetAdmin = await prisma.administrador.findUnique({ where: { id: adminId } })
+
+      if (!targetAdmin) {
+        return handleCORS(NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 }))
+      }
+
+      const isTargetFundador = EMAILS_FUNDADORES.includes(targetAdmin.email?.toLowerCase())
+      const isCurrentFundador = EMAILS_FUNDADORES.includes(currentAdmin.email?.toLowerCase())
+      const isSelf = targetAdmin.id === currentAdmin.id
+
+      // Regla: Fundadores solo pueden eliminarse a sí mismos
+      if (isTargetFundador && (!isSelf || !isCurrentFundador)) {
+        return handleCORS(NextResponse.json({ error: "Los fundadores solo pueden eliminarse a sí mismos" }, { status: 403 }))
+      }
+
+      // Regla: SuperAdmins no pueden eliminar otros SuperAdmins (excepto auto-eliminación)
+      if (targetAdmin.rol === 'superadmin' && !isSelf) {
+        return handleCORS(NextResponse.json({ error: "No puedes eliminar a otro SuperAdmin" }, { status: 403 }))
+      }
+
+      // Desactivar en lugar de eliminar (para mantener historial)
+      await prisma.administrador.update({
+        where: { id: adminId },
+        data: { activo: false }
+      })
+
+      return handleCORS(NextResponse.json({ success: true, message: "Usuario desactivado" }))
+    }
+
     // POST /api/security/change-password - Cambiar contraseña (PROTEGIDO)
     if (route === '/security/change-password' && method === 'POST') {
       const authResult = await verifyAuth(request)
