@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,12 +8,11 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// Modelo Administrador (para autenticación)
 model Administrador {
   id        String   @id @default(uuid())
   nombre    String
   email     String   @unique
-  password  String   // Hash del password con bcrypt
+  password  String
   activo    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -24,31 +20,25 @@ model Administrador {
   @@map("administradores")
 }
 
-// Modelo Cliente (usuarios de la tienda)
 model Cliente {
-  id        String   @id @default(uuid())
-  nombre    String
-  email     String   @unique
-  password  String   // Hash del password con bcrypt
-  telefono  String?
-  direccion String?
-  activo    Boolean  @default(true)
-  
-  // Push Notifications
-  push_token         String?   // OneSignal Player ID o Push Token
-  push_enabled       Boolean   @default(false) // Si tiene notificaciones activadas
-  push_subscribed_at DateTime? // Cuando se suscribió
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  pedidos           Pedido[]
+  id                 String             @id @default(uuid())
+  nombre             String
+  email              String             @unique
+  password           String
+  telefono           String?
+  direccion          String?
+  activo             Boolean            @default(true)
+  push_token         String?
+  push_enabled       Boolean            @default(false)
+  push_subscribed_at DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
   contactosFavoritos ContactoFavorito[]
+  pedidos            Pedido[]
 
   @@map("clientes")
 }
 
-// Modelo ContactoFavorito (libreta de direcciones del cliente)
 model ContactoFavorito {
   id             String    @id @default(uuid())
   clienteId      String
@@ -56,18 +46,16 @@ model ContactoFavorito {
   telefono       String
   direccion      String
   fecha_especial DateTime?
-  motivo         String?   // Cumpleaños, Aniversario, etc.
+  motivo         String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-
-  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  cliente        Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@index([clienteId])
   @@index([fecha_especial])
   @@map("contactos_favoritos")
 }
 
-// Modelo Usuario (clientes)
 model Usuario {
   id        String   @id @default(uuid())
   nombre    String
@@ -76,85 +64,64 @@ model Usuario {
   direccion String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relaciones
-  pedidos Pedido[]
-  pagos   Pago[]
+  pagos     Pago[]
+  pedidos   Pedido[]
 
   @@map("usuarios")
 }
 
-// Modelo Producto
 model Producto {
-  id          String   @id @default(uuid())
-  nombre      String
-  descripcion String?
-  medidas     String?  // Ej: "40cm x 30cm"
-  flores_incluidas String?  // Ej: "12 rosas rojas, 5 lirios blancos, follaje"
-  precio      Float
-  stock       Int      @default(0)
-  imagen_url  String?
-  
-  // Campos de clasificación
-  categoria           String?  // Ramos, Arreglos, Plantas, etc
-  tipo_flor           String?  // Rosas, Tulipanes, Girasoles, etc
-  ocasion             String?  // Boda, Cumpleaños, Aniversario, etc
-  
-  // Campos de ofertas
-  en_oferta           Boolean  @default(false)
-  precio_oferta       Float?
+  id                   String          @id @default(uuid())
+  nombre               String
+  descripcion          String?
+  medidas              String?
+  flores_incluidas     String?
+  precio               Float
+  stock                Int             @default(0)
+  imagen_url           String?
+  categoria            String?
+  tipo_flor            String?
+  ocasion              String?
+  en_oferta            Boolean         @default(false)
+  precio_oferta        Float?
   porcentaje_descuento Int?
-  fecha_inicio_oferta DateTime?
-  fecha_fin_oferta    DateTime?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relaciones
-  detallesPedido DetallePedido[]
+  fecha_inicio_oferta  DateTime?
+  fecha_fin_oferta     DateTime?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  detallesPedido       DetallePedido[]
 
   @@map("productos")
 }
 
-// Modelo Pedido
 model Pedido {
-  id        String   @id @default(uuid())
-  usuarioId String?
-  clienteId String?
-  total     Float
-  estado    String   @default("pendiente") // pendiente, en_preparacion, enviado, entregado, cancelado
-  fecha     DateTime @default(now())
-  
-  // Datos del cliente
+  id                  String          @id @default(uuid())
+  usuarioId           String?
+  clienteId           String?
+  total               Float
+  estado              String          @default("pendiente")
+  fecha               DateTime        @default(now())
   nombre_cliente      String
   email_cliente       String
   telefono_cliente    String?
   direccion_envio     String
-  
-  // Detalles de entrega y regalo
   nombre_destinatario String?
   tel_destinatario    String?
-  horario_entrega     String?  // "10:00-13:00", "13:00-15:00", "15:00-18:00"
-  dedicatoria         String?  @db.Text
-  
-  // Stripe
+  horario_entrega     String?
+  dedicatoria         String?
   stripe_session_id   String?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relaciones
-  usuario        Usuario?        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  cliente        Cliente?        @relation(fields: [clienteId], references: [id], onDelete: SetNull)
-  detallesPedido DetallePedido[]
-  pagos          Pago[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  detallesPedido      DetallePedido[]
+  pagos               Pago[]
+  cliente             Cliente?        @relation(fields: [clienteId], references: [id])
+  usuario             Usuario?        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@index([usuarioId])
   @@index([clienteId])
   @@map("pedidos")
 }
 
-// Modelo DetallePedido
 model DetallePedido {
   id              String   @id @default(uuid())
   pedidoId        String
@@ -164,52 +131,45 @@ model DetallePedido {
   subtotal        Float
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-
-  // Relaciones
-  pedido   Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  producto Producto @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  pedido          Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  producto        Producto @relation(fields: [productoId], references: [id])
 
   @@index([pedidoId])
   @@index([productoId])
   @@map("detalles_pedido")
 }
 
-// Modelo Pago
 model Pago {
-  id                  String   @id @default(uuid())
-  pedidoId            String
-  usuarioId           String
-  monto               Float
-  metodo              String // tarjeta, efectivo, transferencia, etc.
-  estado              String   @default("pendiente") // pendiente, completado, fallido
-  referencia_externa  String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  // Relaciones
-  pedido  Pedido  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  id                 String   @id @default(uuid())
+  pedidoId           String
+  usuarioId          String
+  monto              Float
+  metodo             String
+  estado             String   @default("pendiente")
+  referencia_externa String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  pedido             Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  usuario            Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@index([pedidoId])
   @@index([usuarioId])
   @@map("pagos")
 }
 
-
-// Modelo Cupon (para descuentos)
 model Cupon {
-  id          String   @id @default(uuid())
-  codigo      String   @unique
-  tipo        String   // "porcentaje" o "monto_fijo"
-  valor       Float    // Porcentaje (10 = 10%) o monto fijo ($50)
-  activo      Boolean  @default(true)
-  usos        Int      @default(0)
-  usos_maximos Int?    // null = ilimitado
-  monto_minimo Float?  // Monto mínimo de compra requerido
-  fecha_inicio DateTime @default(now())
-  fecha_fin   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String    @id @default(uuid())
+  codigo       String    @unique
+  tipo         String
+  valor        Float
+  activo       Boolean   @default(true)
+  usos         Int       @default(0)
+  usos_maximos Int?
+  monto_minimo Float?
+  fecha_inicio DateTime  @default(now())
+  fecha_fin    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@map("cupones")
 }
