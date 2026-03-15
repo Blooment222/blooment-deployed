@@ -149,7 +149,7 @@ function CuentaContent() {
       })
       if (response.ok) {
         const data = await response.json()
-        setContactos(data)
+        setContactos(data.contactos || data || [])
       }
     } catch (error) {
       console.error('Error:', error)
