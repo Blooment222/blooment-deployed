@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,24 +22,15 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Label } from '@/components/ui/label'
-import { Shield, Key, UserPlus, Trash2, Eye, EyeOff, Mail, Check, X } from 'lucide-react'
+import { Shield, Key, UserPlus, Trash2, Eye, EyeOff } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { useAuth } from '@/lib/auth-client'
 
-const PERMISOS_DISPONIBLES = [
-  { key: 'dashboard', label: 'Dashboard', description: 'Ver estadísticas generales' },
-  { key: 'productos', label: 'Productos', description: 'Gestionar catálogo' },
-  { key: 'pedidos', label: 'Pedidos', description: 'Ver y gestionar pedidos' },
-  { key: 'clientes', label: 'Clientes', description: 'Ver información de clientes' },
-  { key: 'cupones', label: 'Cupones', description: 'Crear y gestionar cupones' },
-  { key: 'finanzas', label: 'Finanzas', description: 'Ver reportes financieros' },
-]
-
 export default function SecurityPage() {
+  const router = useRouter()
   const [admins, setAdmins] = useState([])
   const [loading, setLoading] = useState(true)
-  const [dialogOpen, setDialogOpen] = useState(false)
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
@@ -47,20 +39,6 @@ export default function SecurityPage() {
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
-  })
-  
-  const [newAdminForm, setNewAdminForm] = useState({
-    nombre: '',
-    email: '',
-    password: '',
-    permisos: {
-      dashboard: true,
-      productos: true,
-      pedidos: true,
-      clientes: false,
-      cupones: false,
-      finanzas: false
-    }
   })
 
   const { toast } = useToast()
@@ -131,58 +109,6 @@ export default function SecurityPage() {
     }
   }
 
-  const handleAddAdmin = async (e) => {
-    e.preventDefault()
-    
-    if (!newAdminForm.nombre || !newAdminForm.email || !newAdminForm.password) {
-      toast({ title: 'Error', description: 'Todos los campos son obligatorios', variant: 'destructive' })
-      return
-    }
-
-    if (newAdminForm.password.length < 6) {
-      toast({ title: 'Error', description: 'La contraseña debe tener al menos 6 caracteres', variant: 'destructive' })
-      return
-    }
-
-    try {
-      const token = getToken()
-      const res = await fetch('/api/security/admins', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          nombre: newAdminForm.nombre,
-          email: newAdminForm.email,
-          password: newAdminForm.password,
-          rol: 'colaborador',
-          permisos: JSON.stringify(newAdminForm.permisos)
-        })
-      })
-
-      if (res.ok) {
-        toast({
-          title: '✅ Administrador creado',
-          description: `${newAdminForm.nombre} ha sido agregado como colaborador.`
-        })
-        setDialogOpen(false)
-        setNewAdminForm({
-          nombre: '',
-          email: '',
-          password: '',
-          permisos: { dashboard: true, productos: true, pedidos: true, clientes: false, cupones: false, finanzas: false }
-        })
-        fetchAdmins()
-      } else {
-        const data = await res.json()
-        toast({ title: 'Error', description: data.error || 'Error al crear administrador', variant: 'destructive' })
-      }
-    } catch (error) {
-      toast({ title: 'Error', description: 'Error de conexión', variant: 'destructive' })
-    }
-  }
-
   const handleDeactivateAdmin = async (id, email) => {
     if (!confirm(`¿Estás seguro de desactivar a ${email}?`)) return
 
@@ -200,16 +126,6 @@ export default function SecurityPage() {
     } catch (error) {
       toast({ title: 'Error', description: 'Error al desactivar', variant: 'destructive' })
     }
-  }
-
-  const togglePermiso = (key) => {
-    setNewAdminForm({
-      ...newAdminForm,
-      permisos: {
-        ...newAdminForm.permisos,
-        [key]: !newAdminForm.permisos[key]
-      }
-    })
   }
 
   const parsePermisos = (permisosString) => {
@@ -262,7 +178,7 @@ export default function SecurityPage() {
           </CardContent>
         </Card>
 
-        {/* Agregar Colaborador */}
+        {/* Agregar Colaborador - Link a página completa */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -272,7 +188,11 @@ export default function SecurityPage() {
             <CardDescription>Agrega personas con acceso limitado</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => setDialogOpen(true)} className="w-full">
+            <Button 
+              onClick={() => router.push('/admin/security/nuevo-colaborador')} 
+              className="w-full"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
               Agregar Colaborador
             </Button>
           </CardContent>
@@ -285,14 +205,14 @@ export default function SecurityPage() {
           <CardTitle>Usuarios con Acceso</CardTitle>
           <CardDescription>Lista de administradores y colaboradores</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead className="hidden sm:table-cell">Email</TableHead>
                 <TableHead>Rol</TableHead>
-                <TableHead>Permisos</TableHead>
+                <TableHead className="hidden md:table-cell">Permisos</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead></TableHead>
               </TableRow>
@@ -302,8 +222,13 @@ export default function SecurityPage() {
                 const permisos = parsePermisos(admin.permisos)
                 return (
                   <TableRow key={admin.id}>
-                    <TableCell className="font-medium">{admin.nombre}</TableCell>
-                    <TableCell>{admin.email}</TableCell>
+                    <TableCell className="font-medium">
+                      <div>
+                        {admin.nombre}
+                        <p className="text-xs text-gray-500 sm:hidden">{admin.email}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">{admin.email}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         admin.rol === 'superadmin' 
@@ -313,16 +238,19 @@ export default function SecurityPage() {
                         {admin.rol === 'superadmin' ? 'Super Admin' : 'Colaborador'}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {admin.rol === 'superadmin' ? (
                         <span className="text-xs text-gray-500">Acceso total</span>
                       ) : (
                         <div className="flex flex-wrap gap-1">
-                          {Object.entries(permisos).filter(([_, v]) => v).map(([key]) => (
+                          {Object.entries(permisos).filter(([_, v]) => v).slice(0, 3).map(([key]) => (
                             <span key={key} className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">
                               {key}
                             </span>
                           ))}
+                          {Object.entries(permisos).filter(([_, v]) => v).length > 3 && (
+                            <span className="text-xs text-gray-400">+más</span>
+                          )}
                         </div>
                       )}
                     </TableCell>
@@ -411,104 +339,6 @@ export default function SecurityPage() {
                 Cancelar
               </Button>
               <Button type="submit">Cambiar Contraseña</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog: Agregar Colaborador */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto mx-4 sm:mx-auto">
-          <DialogHeader className="sticky top-0 bg-white pb-2 z-10">
-            <DialogTitle>Agregar Colaborador</DialogTitle>
-            <DialogDescription>Crea una cuenta con permisos limitados</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleAddAdmin} className="space-y-4">
-            <div>
-              <Label>Nombre Completo *</Label>
-              <Input
-                value={newAdminForm.nombre}
-                onChange={(e) => setNewAdminForm({...newAdminForm, nombre: e.target.value})}
-                placeholder="Ej: María López"
-                required
-              />
-            </div>
-            <div>
-              <Label>Email *</Label>
-              <Input
-                type="email"
-                value={newAdminForm.email}
-                onChange={(e) => setNewAdminForm({...newAdminForm, email: e.target.value})}
-                placeholder="maria@ejemplo.com"
-                required
-              />
-            </div>
-            <div>
-              <Label>Contraseña * (mínimo 6 caracteres)</Label>
-              <Input
-                type="password"
-                value={newAdminForm.password}
-                onChange={(e) => setNewAdminForm({...newAdminForm, password: e.target.value})}
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">Esta persona podrá cambiarla después</p>
-            </div>
-
-            {/* Selector de Permisos */}
-            <div>
-              <Label className="mb-2 block">Permisos de Acceso</Label>
-              <div className="space-y-2 border rounded-lg p-3 bg-gray-50">
-                {PERMISOS_DISPONIBLES.map((permiso) => (
-                  <div
-                    key={permiso.key}
-                    className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
-                      newAdminForm.permisos[permiso.key] 
-                        ? 'bg-green-50 border border-green-200' 
-                        : 'bg-white border border-gray-200'
-                    }`}
-                    onClick={() => togglePermiso(permiso.key)}
-                  >
-                    <div>
-                      <p className="font-medium text-sm">{permiso.label}</p>
-                      <p className="text-xs text-gray-500">{permiso.description}</p>
-                    </div>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                      newAdminForm.permisos[permiso.key] ? 'bg-green-500' : 'bg-gray-200'
-                    }`}>
-                      {newAdminForm.permisos[permiso.key] ? (
-                        <Check className="w-4 h-4 text-white" />
-                      ) : (
-                        <X className="w-4 h-4 text-gray-400" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                El colaborador NO podrá acceder a Seguridad ni editar permisos
-              </p>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <div className="flex items-start gap-2">
-                <Mail className="w-5 h-5 text-blue-500 mt-0.5" />
-                <div>
-                  <p className="font-medium text-sm text-blue-700">Notificación por Email:</p>
-                  <p className="text-xs text-blue-600">
-                    Recibirás un email en <strong>blooment222@outlook.com</strong> cuando se cree el nuevo colaborador.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter className="sticky bottom-0 bg-white pt-4 border-t mt-4">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit">
-                <UserPlus className="w-4 h-4 mr-2" />
-                Crear Colaborador
-              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
