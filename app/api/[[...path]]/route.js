@@ -2628,13 +2628,10 @@ async function handleRoute(request, { params }) {
         // Crear pedido con transacción
         const pedido = await prisma.$transaction(async (tx) => {
           // Crear el pedido
-          // Usar sintaxis de relaciones de Prisma para conectar usuario y cliente
+          // Solo conectar con cliente (usuarioId es opcional y para otro modelo)
           const nuevoPedido = await tx.pedido.create({
             data: {
-              // Conectar relaciones (en lugar de IDs directos)
-              usuario: {
-                connect: { id: cliente.id }
-              },
+              // Solo conectar con cliente
               cliente: {
                 connect: { id: cliente.id }
               },
