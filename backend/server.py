@@ -13,17 +13,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Proxy todas las peticiones /api al Next.js en puerto 3000
-@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
-async def proxy(request: Request, path: str):
+# Proxy todas las peticiones al Next.js en puerto 3000
+# Las peticiones llegan como /api/... y van a localhost:3000/api/...
+@app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_api(request: Request, path: str):
     async with httpx.AsyncClient() as client:
         url = f"http://localhost:3000/api/{path}"
         
-        # Obtener headers
         headers = dict(request.headers)
         headers.pop("host", None)
         
-        # Obtener body si existe
         body = await request.body()
         
         try:
@@ -35,14 +34,65 @@ async def proxy(request: Request, path: str):
                 timeout=30.0
             )
             
+            # Copiar headers relevantes
+            response_headers = {}
+            for key, value in response.headers.items():
+                if key.lower() not in ['content-encoding', 'transfer-encoding', 'content-length']:
+                    response_headers[key] = value
+            
             return Response(
                 content=response.content,
                 status_code=response.status_code,
-                headers=dict(response.headers)
+                headers=response_headers,
+                media_type=response.headers.get('content-type', 'application/json')
             )
         except Exception as e:
+            print(f"Proxy error: {e}")
             return Response(
                 content=f'{{"error": "Proxy error: {str(e)}"}}',
                 status_code=502,
                 media_type="application/json"
             )
+
+# También manejar rutas sin /api/ por si acaso
+@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_fallback(request: Request, path: str):
+    async with httpx.AsyncClient() as client:
+        url = f"http://localhost:3000/api/{path}"
+        
+        headers = dict(request.headers)
+        headers.pop("host", None)
+        
+        body = await request.body()
+        
+        try:
+            response = await client.request(
+                method=request.method,
+                url=url,
+                headers=headers,
+                content=body,
+                timeout=30.0
+            )
+            
+            response_headers = {}
+            for key, value in response.headers.items():
+                if key.lower() not in ['content-encoding', 'transfer-encoding', 'content-length']:
+                    response_headers[key] = value
+            
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                headers=response_headers,
+                media_type=response.headers.get('content-type', 'application/json')
+            )
+        except Exception as e:
+            print(f"Proxy error: {e}")
+            return Response(
+                content=f'{{"error": "Proxy error: {str(e)}"}}',
+                status_code=502,
+                media_type="application/json"
+            )
+
+@app.get("/")
+async def root():
+    return {"status": "API Proxy running", "target": "localhost:3000"}
