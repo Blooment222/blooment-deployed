@@ -69,7 +69,8 @@ export default function SecurityPage() {
       
       if (res.ok) {
         const data = await res.json()
-        setAdmins(data)
+        // Filtrar solo usuarios activos
+        setAdmins(data.filter(admin => admin.activo))
       }
     } catch (error) {
       console.error('Error:', error)
