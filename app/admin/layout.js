@@ -17,7 +17,8 @@ import {
   LogOut,
   Shield,
   Ticket,
-  TrendingUp
+  TrendingUp,
+  User
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -29,15 +30,41 @@ function AdminLayoutContent({ children }) {
   const router = useRouter()
   const { user, loading, logout } = useAuth()
 
-  const navItems = [
-    { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Productos', href: '/admin/productos', icon: Package },
-    { name: 'Pedidos', href: '/admin/pedidos', icon: ShoppingCart },
-    { name: 'Clientes', href: '/admin/clientes', icon: Users },
-    { name: 'Cupones', href: '/admin/cupones', icon: Ticket },
-    { name: 'Finanzas', href: '/admin/finanzas', icon: TrendingUp },
-    { name: 'Seguridad', href: '/admin/security', icon: Shield },
+  // Definir items de navegación con sus permisos requeridos
+  const allNavItems = [
+    { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, permiso: 'dashboard' },
+    { name: 'Productos', href: '/admin/productos', icon: Package, permiso: 'productos' },
+    { name: 'Pedidos', href: '/admin/pedidos', icon: ShoppingCart, permiso: 'pedidos' },
+    { name: 'Clientes', href: '/admin/clientes', icon: Users, permiso: 'clientes' },
+    { name: 'Cupones', href: '/admin/cupones', icon: Ticket, permiso: 'cupones' },
+    { name: 'Finanzas', href: '/admin/finanzas', icon: TrendingUp, permiso: 'finanzas' },
+    { name: 'Seguridad', href: '/admin/security', icon: Shield, permiso: 'seguridad', soloSuperadmin: true },
+    { name: 'Mi Cuenta', href: '/admin/mi-cuenta', icon: User, permiso: null }, // Visible para todos
   ]
+
+  // Parsear permisos del usuario
+  const getUserPermisos = () => {
+    if (!user) return {}
+    if (user.rol === 'superadmin') {
+      return { dashboard: true, productos: true, pedidos: true, clientes: true, cupones: true, finanzas: true, seguridad: true }
+    }
+    try {
+      return JSON.parse(user.permisos || '{}')
+    } catch {
+      return {}
+    }
+  }
+
+  const permisos = getUserPermisos()
+  const isSuperAdmin = user?.rol === 'superadmin'
+
+  // Filtrar items de navegación según permisos
+  const navItems = allNavItems.filter(item => {
+    if (item.permiso === null) return true // Visible para todos (Mi Cuenta)
+    if (item.soloSuperadmin && !isSuperAdmin) return false
+    if (isSuperAdmin) return true
+    return permisos[item.permiso]
+  })
 
   // Si estamos en la página de login, renderizar directamente sin layout
   const isLoginPage = pathname === '/admin/login'

@@ -21,10 +21,19 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Label } from '@/components/ui/label'
-import { Shield, Key, UserPlus, Trash2, Eye, EyeOff, Mail } from 'lucide-react'
+import { Shield, Key, UserPlus, Trash2, Eye, EyeOff, Mail, Check, X } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { useAuth } from '@/lib/auth-client'
+
+const PERMISOS_DISPONIBLES = [
+  { key: 'dashboard', label: 'Dashboard', description: 'Ver estadísticas generales' },
+  { key: 'productos', label: 'Productos', description: 'Gestionar catálogo' },
+  { key: 'pedidos', label: 'Pedidos', description: 'Ver y gestionar pedidos' },
+  { key: 'clientes', label: 'Clientes', description: 'Ver información de clientes' },
+  { key: 'cupones', label: 'Cupones', description: 'Crear y gestionar cupones' },
+  { key: 'finanzas', label: 'Finanzas', description: 'Ver reportes financieros' },
+]
 
 export default function SecurityPage() {
   const [admins, setAdmins] = useState([])
@@ -34,7 +43,6 @@ export default function SecurityPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   
-  // Form states
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -44,7 +52,15 @@ export default function SecurityPage() {
   const [newAdminForm, setNewAdminForm] = useState({
     nombre: '',
     email: '',
-    password: ''
+    password: '',
+    permisos: {
+      dashboard: true,
+      productos: true,
+      pedidos: true,
+      clientes: false,
+      cupones: false,
+      finanzas: false
+    }
   })
 
   const { toast } = useToast()
@@ -58,9 +74,7 @@ export default function SecurityPage() {
     try {
       const token = getToken()
       const res = await fetch('/api/security/admins', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       })
       
       if (res.ok) {
@@ -78,20 +92,12 @@ export default function SecurityPage() {
     e.preventDefault()
     
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast({
-        title: 'Error',
-        description: 'Las contraseñas no coinciden',
-        variant: 'destructive'
-      })
+      toast({ title: 'Error', description: 'Las contraseñas no coinciden', variant: 'destructive' })
       return
     }
 
     if (passwordForm.newPassword.length < 6) {
-      toast({
-        title: 'Error',
-        description: 'La contraseña debe tener al menos 6 caracteres',
-        variant: 'destructive'
-      })
+      toast({ title: 'Error', description: 'La contraseña debe tener al menos 6 caracteres', variant: 'destructive' })
       return
     }
 
@@ -109,398 +115,399 @@ export default function SecurityPage() {
         })
       })
 
-      const data = await res.json()
-
       if (res.ok) {
         toast({
-          title: '✅ Contraseña Cambiada',
-          description: 'Tu contraseña ha sido actualizada. Se envió una notificación a tu email.'
+          title: '✅ Contraseña actualizada',
+          description: 'Tu contraseña ha sido actualizada correctamente.'
         })
         setChangePasswordOpen(false)
-        setPasswordForm({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        })
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
       } else {
-        toast({
-          title: 'Error',
-          description: data.error || 'No se pudo cambiar la contraseña',
-          variant: 'destructive'
-        })
+        const data = await res.json()
+        toast({ title: 'Error', description: data.error || 'Error al cambiar contraseña', variant: 'destructive' })
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Ocurrió un error al cambiar la contraseña',
-        variant: 'destructive'
-      })
+      toast({ title: 'Error', description: 'Error de conexión', variant: 'destructive' })
     }
   }
 
-  const handleCreateAdmin = async (e) => {
+  const handleAddAdmin = async (e) => {
     e.preventDefault()
-
+    
     if (!newAdminForm.nombre || !newAdminForm.email || !newAdminForm.password) {
-      toast({
-        title: 'Error',
-        description: 'Todos los campos son requeridos',
-        variant: 'destructive'
-      })
+      toast({ title: 'Error', description: 'Todos los campos son obligatorios', variant: 'destructive' })
       return
     }
 
     if (newAdminForm.password.length < 6) {
-      toast({
-        title: 'Error',
-        description: 'La contraseña debe tener al menos 6 caracteres',
-        variant: 'destructive'
-      })
+      toast({ title: 'Error', description: 'La contraseña debe tener al menos 6 caracteres', variant: 'destructive' })
       return
     }
 
     try {
       const token = getToken()
-      const res = await fetch('/api/security/create-admin', {
+      const res = await fetch('/api/security/admins', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(newAdminForm)
+        body: JSON.stringify({
+          nombre: newAdminForm.nombre,
+          email: newAdminForm.email,
+          password: newAdminForm.password,
+          rol: 'colaborador',
+          permisos: JSON.stringify(newAdminForm.permisos)
+        })
       })
-
-      const data = await res.json()
 
       if (res.ok) {
         toast({
-          title: '✅ Administrador Creado',
-          description: `${newAdminForm.nombre} ha sido agregado. Se envió una notificación a tu email.`
+          title: '✅ Administrador creado',
+          description: `${newAdminForm.nombre} ha sido agregado como colaborador.`
         })
         setDialogOpen(false)
         setNewAdminForm({
           nombre: '',
           email: '',
-          password: ''
-        })
-        fetchAdmins()
-      } else {
-        toast({
-          title: 'Error',
-          description: data.error || 'No se pudo crear el administrador',
-          variant: 'destructive'
-        })
-      }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Ocurrió un error al crear el administrador',
-        variant: 'destructive'
-      })
-    }
-  }
-
-  const handleDeactivateAdmin = async (id, email) => {
-    if (!confirm(`¿Estás seguro de desactivar a ${email}?`)) {
-      return
-    }
-
-    try {
-      const token = getToken()
-      const res = await fetch(`/api/security/deactivate-admin/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (res.ok) {
-        toast({
-          title: '✅ Administrador Desactivado',
-          description: `${email} ya no puede acceder al panel`
+          password: '',
+          permisos: { dashboard: true, productos: true, pedidos: true, clientes: false, cupones: false, finanzas: false }
         })
         fetchAdmins()
       } else {
         const data = await res.json()
-        toast({
-          title: 'Error',
-          description: data.error || 'No se pudo desactivar',
-          variant: 'destructive'
-        })
+        toast({ title: 'Error', description: data.error || 'Error al crear administrador', variant: 'destructive' })
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Ocurrió un error',
-        variant: 'destructive'
+      toast({ title: 'Error', description: 'Error de conexión', variant: 'destructive' })
+    }
+  }
+
+  const handleDeactivateAdmin = async (id, email) => {
+    if (!confirm(`¿Estás seguro de desactivar a ${email}?`)) return
+
+    try {
+      const token = getToken()
+      const res = await fetch(`/api/security/admins/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
       })
+
+      if (res.ok) {
+        toast({ title: '✅ Administrador desactivado', description: `${email} ya no puede acceder al panel` })
+        fetchAdmins()
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Error al desactivar', variant: 'destructive' })
+    }
+  }
+
+  const togglePermiso = (key) => {
+    setNewAdminForm({
+      ...newAdminForm,
+      permisos: {
+        ...newAdminForm.permisos,
+        [key]: !newAdminForm.permisos[key]
+      }
+    })
+  }
+
+  const parsePermisos = (permisosString) => {
+    try {
+      return JSON.parse(permisosString || '{}')
+    } catch {
+      return {}
     }
   }
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Ajustes de Seguridad</h1>
-        <p className="text-muted-foreground">Cargando...</p>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Cargando...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       <Toaster />
       
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Shield className="h-8 w-8 text-[#F5B6C6]" />
-          Ajustes de Seguridad
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Gestiona las contraseñas y accesos de administradores
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Shield className="h-6 w-6 text-primary" />
+            Seguridad
+          </h1>
+          <p className="text-sm text-muted-foreground">Gestiona accesos y contraseñas</p>
+        </div>
       </div>
 
-      {/* Cambiar Contraseña */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5" />
-            Tu Contraseña
-          </CardTitle>
-          <CardDescription>
-            Cambia tu contraseña actual. Recibirás una notificación por email.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={() => setChangePasswordOpen(true)}>
-            <Key className="h-4 w-4 mr-2" />
-            Cambiar Mi Contraseña
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Cambiar Contraseña */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              Mi Contraseña
+            </CardTitle>
+            <CardDescription>Cambia tu contraseña de acceso</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => setChangePasswordOpen(true)} className="w-full">
+              Cambiar Contraseña
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Agregar Colaborador */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Colaboradores
+            </CardTitle>
+            <CardDescription>Agrega personas con acceso limitado</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => setDialogOpen(true)} className="w-full">
+              Agregar Colaborador
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Lista de Administradores */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Administradores</CardTitle>
-              <CardDescription>
-                {admins.length} personas con acceso al panel
-              </CardDescription>
-            </div>
-            <Button onClick={() => setDialogOpen(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Agregar Administrador
-            </Button>
-          </div>
+          <CardTitle>Usuarios con Acceso</CardTitle>
+          <CardDescription>Lista de administradores y colaboradores</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Fecha de Creación</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {admins.map((admin) => (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Rol</TableHead>
+                <TableHead>Permisos</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {admins.map((admin) => {
+                const permisos = parsePermisos(admin.permisos)
+                return (
                   <TableRow key={admin.id}>
                     <TableCell className="font-medium">{admin.nombre}</TableCell>
                     <TableCell>{admin.email}</TableCell>
                     <TableCell>
-                      {admin.activo ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          ✅ Activo
-                        </span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        admin.rol === 'superadmin' 
+                          ? 'bg-purple-100 text-purple-700' 
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {admin.rol === 'superadmin' ? 'Super Admin' : 'Colaborador'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {admin.rol === 'superadmin' ? (
+                        <span className="text-xs text-gray-500">Acceso total</span>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          ❌ Inactivo
-                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {Object.entries(permisos).filter(([_, v]) => v).map(([key]) => (
+                            <span key={key} className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">
+                              {key}
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>
-                      {new Date(admin.createdAt).toLocaleDateString('es-ES')}
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        admin.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {admin.activo ? 'Activo' : 'Inactivo'}
+                      </span>
                     </TableCell>
-                    <TableCell className="text-right">
-                      {admin.activo && admin.email !== user?.email && (
+                    <TableCell>
+                      {admin.activo && admin.rol !== 'superadmin' && (
                         <Button
                           variant="ghost"
-                          size="icon"
+                          size="sm"
                           onClick={() => handleDeactivateAdmin(admin.id, admin.email)}
-                          title="Desactivar"
+                          className="text-red-500 hover:text-red-700"
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
-                      {admin.email === user?.email && (
-                        <span className="text-xs text-muted-foreground">Tú</span>
                       )}
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                )
+              })}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
-      {/* Dialog Cambiar Contraseña */}
+      {/* Dialog: Cambiar Contraseña */}
       <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Cambiar Contraseña</DialogTitle>
-            <DialogDescription>
-              Ingresa tu contraseña actual y tu nueva contraseña
-            </DialogDescription>
+            <DialogDescription>Ingresa tu contraseña actual y la nueva</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleChangePassword}>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="currentPassword">Contraseña Actual *</Label>
-                <div className="relative">
-                  <Input
-                    id="currentPassword"
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    value={passwordForm.currentPassword}
-                    onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  >
-                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="newPassword">Nueva Contraseña * (mínimo 6 caracteres)</Label>
-                <div className="relative">
-                  <Input
-                    id="newPassword"
-                    type={showNewPassword ? 'text' : 'password'}
-                    value={passwordForm.newPassword}
-                    onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                    required
-                    minLength={6}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                  >
-                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="confirmPassword">Confirmar Nueva Contraseña *</Label>
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <div>
+              <Label>Contraseña Actual</Label>
+              <div className="relative">
                 <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={passwordForm.confirmPassword}
-                    onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                    required
-                  />
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
-
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex gap-2">
-                  <Mail className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-900">
-                    <strong>Notificación por Email:</strong><br/>
-                    Recibirás un email de confirmación en <strong>blooment@gmail.com</strong> cuando cambies tu contraseña.
-                  </div>
-                </div>
+            </div>
+            <div>
+              <Label>Nueva Contraseña</Label>
+              <div className="relative">
+                <Input
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
+            </div>
+            <div>
+              <Label>Confirmar Nueva Contraseña</Label>
+              <Input
+                type="password"
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                required
+              />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setChangePasswordOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit">
-                Cambiar Contraseña
-              </Button>
+              <Button type="submit">Cambiar Contraseña</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Nuevo Administrador */}
+      {/* Dialog: Agregar Colaborador */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Agregar Nuevo Administrador</DialogTitle>
-            <DialogDescription>
-              Crea una cuenta de administrador para tu socio o colaborador
-            </DialogDescription>
+            <DialogTitle>Agregar Colaborador</DialogTitle>
+            <DialogDescription>Crea una cuenta con permisos limitados</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleCreateAdmin}>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="nombre">Nombre Completo *</Label>
-                <Input
-                  id="nombre"
-                  value={newAdminForm.nombre}
-                  onChange={(e) => setNewAdminForm({...newAdminForm, nombre: e.target.value})}
-                  placeholder="Ej: María López"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newAdminForm.email}
-                  onChange={(e) => setNewAdminForm({...newAdminForm, email: e.target.value})}
-                  placeholder="maria@ejemplo.com"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Contraseña * (mínimo 6 caracteres)</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={newAdminForm.password}
-                  onChange={(e) => setNewAdminForm({...newAdminForm, password: e.target.value})}
-                  placeholder="••••••••"
-                  required
-                  minLength={6}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Esta persona podrá cambiarla después desde su panel
-                </p>
-              </div>
+          <form onSubmit={handleAddAdmin} className="space-y-4">
+            <div>
+              <Label>Nombre Completo *</Label>
+              <Input
+                value={newAdminForm.nombre}
+                onChange={(e) => setNewAdminForm({...newAdminForm, nombre: e.target.value})}
+                placeholder="Ej: María López"
+                required
+              />
+            </div>
+            <div>
+              <Label>Email *</Label>
+              <Input
+                type="email"
+                value={newAdminForm.email}
+                onChange={(e) => setNewAdminForm({...newAdminForm, email: e.target.value})}
+                placeholder="maria@ejemplo.com"
+                required
+              />
+            </div>
+            <div>
+              <Label>Contraseña * (mínimo 6 caracteres)</Label>
+              <Input
+                type="password"
+                value={newAdminForm.password}
+                onChange={(e) => setNewAdminForm({...newAdminForm, password: e.target.value})}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Esta persona podrá cambiarla después</p>
+            </div>
 
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex gap-2">
-                  <Mail className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-900">
-                    <strong>Notificación por Email:</strong><br/>
-                    Recibirás un email en <strong>blooment@gmail.com</strong> cuando se cree el nuevo administrador.
+            {/* Selector de Permisos */}
+            <div>
+              <Label className="mb-2 block">Permisos de Acceso</Label>
+              <div className="space-y-2 border rounded-lg p-3 bg-gray-50">
+                {PERMISOS_DISPONIBLES.map((permiso) => (
+                  <div
+                    key={permiso.key}
+                    className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                      newAdminForm.permisos[permiso.key] 
+                        ? 'bg-green-50 border border-green-200' 
+                        : 'bg-white border border-gray-200'
+                    }`}
+                    onClick={() => togglePermiso(permiso.key)}
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{permiso.label}</p>
+                      <p className="text-xs text-gray-500">{permiso.description}</p>
+                    </div>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                      newAdminForm.permisos[permiso.key] ? 'bg-green-500' : 'bg-gray-200'
+                    }`}>
+                      {newAdminForm.permisos[permiso.key] ? (
+                        <Check className="w-4 h-4 text-white" />
+                      ) : (
+                        <X className="w-4 h-4 text-gray-400" />
+                      )}
+                    </div>
                   </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                El colaborador NO podrá acceder a Seguridad ni editar permisos
+              </p>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <Mail className="w-5 h-5 text-blue-500 mt-0.5" />
+                <div>
+                  <p className="font-medium text-sm text-blue-700">Notificación por Email:</p>
+                  <p className="text-xs text-blue-600">
+                    Recibirás un email en <strong>blooment222@outlook.com</strong> cuando se cree el nuevo colaborador.
+                  </p>
                 </div>
               </div>
             </div>
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancelar
               </Button>
               <Button type="submit">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Crear Administrador
+                <UserPlus className="w-4 h-4 mr-2" />
+                Crear Colaborador
               </Button>
             </DialogFooter>
           </form>

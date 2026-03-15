@@ -58,21 +58,7 @@ async function handleRoute(request, { params }) {
         ))
       }
 
-      // Whitelist de administradores permitidos
-      const ADMIN_WHITELIST = [
-        'diegoah1107@gmail.com',
-        'maireyesguevara@gmail.com'
-      ]
-
-      // Verificar si el email está en la whitelist
-      if (!ADMIN_WHITELIST.includes(body.email.toLowerCase())) {
-        return handleCORS(NextResponse.json(
-          { error: "Acceso no autorizado" },
-          { status: 403 }
-        ))
-      }
-
-      // Buscar administrador
+      // Buscar administrador (sin whitelist, los permisos se manejan por rol)
       const admin = await prisma.administrador.findUnique({
         where: { email: body.email.toLowerCase() }
       })
@@ -110,7 +96,9 @@ async function handleRoute(request, { params }) {
         user: {
           id: admin.id,
           nombre: admin.nombre,
-          email: admin.email
+          email: admin.email,
+          rol: admin.rol || 'colaborador',
+          permisos: admin.permisos || '{}'
         }
       }))
     }
@@ -143,6 +131,18 @@ async function handleRoute(request, { params }) {
         ))
       }
 
+      // Verificar que el usuario actual sea superadmin
+      const currentAdmin = await prisma.administrador.findUnique({
+        where: { id: authResult.user.id }
+      })
+      
+      if (!currentAdmin || currentAdmin.rol !== 'superadmin') {
+        return handleCORS(NextResponse.json(
+          { error: "Solo los superadmins pueden crear nuevos administradores" },
+          { status: 403 }
+        ))
+      }
+
       const body = await request.json()
       
       if (!body.nombre || !body.email || !body.password) {
@@ -167,19 +167,23 @@ async function handleRoute(request, { params }) {
       // Hashear contraseña
       const hashedPassword = await hashPassword(body.password)
 
-      // Crear administrador
+      // Crear administrador con rol y permisos
       const admin = await prisma.administrador.create({
         data: {
           nombre: body.nombre,
-          email: body.email,
+          email: body.email.toLowerCase(),
           password: hashedPassword,
-          activo: true
+          activo: true,
+          rol: body.rol || 'colaborador',
+          permisos: body.permisos || '{"dashboard":true,"productos":true,"pedidos":true,"clientes":false,"cupones":false,"finanzas":false}'
         },
         select: {
           id: true,
           nombre: true,
           email: true,
           activo: true,
+          rol: true,
+          permisos: true,
           createdAt: true
         }
       })
@@ -347,12 +351,85 @@ async function handleRoute(request, { params }) {
           nombre: true,
           email: true,
           activo: true,
+          rol: true,
+          permisos: true,
           createdAt: true
         },
         orderBy: { createdAt: 'asc' }
       })
 
       return handleCORS(NextResponse.json(admins))
+    }
+    
+    // POST /api/security/admins - Crear nuevo admin/colaborador (PROTEGIDO - solo superadmin)
+    if (route === '/security/admins' && method === 'POST') {
+      const authResult = await verifyAuth(request)
+      
+      if (!authResult.authenticated) {
+        return handleCORS(NextResponse.json(
+          { error: "No autorizado" },
+          { status: 401 }
+        ))
+      }
+
+      // Verificar que el usuario actual sea superadmin
+      const currentAdmin = await prisma.administrador.findUnique({
+        where: { id: authResult.user.id }
+      })
+      
+      if (!currentAdmin || currentAdmin.rol !== 'superadmin') {
+        return handleCORS(NextResponse.json(
+          { error: "Solo los superadmins pueden crear nuevos colaboradores" },
+          { status: 403 }
+        ))
+      }
+
+      const body = await request.json()
+      
+      if (!body.nombre || !body.email || !body.password) {
+        return handleCORS(NextResponse.json(
+          { error: "Nombre, email y contraseña son requeridos" },
+          { status: 400 }
+        ))
+      }
+
+      // Verificar si el email ya existe
+      const existingAdmin = await prisma.administrador.findUnique({
+        where: { email: body.email.toLowerCase() }
+      })
+
+      if (existingAdmin) {
+        return handleCORS(NextResponse.json(
+          { error: "El email ya está registrado" },
+          { status: 409 }
+        ))
+      }
+
+      // Hashear contraseña
+      const hashedPassword = await hashPassword(body.password)
+
+      // Crear colaborador
+      const admin = await prisma.administrador.create({
+        data: {
+          nombre: body.nombre,
+          email: body.email.toLowerCase(),
+          password: hashedPassword,
+          activo: true,
+          rol: 'colaborador',
+          permisos: body.permisos || '{"dashboard":true,"productos":true,"pedidos":true,"clientes":false,"cupones":false,"finanzas":false}'
+        },
+        select: {
+          id: true,
+          nombre: true,
+          email: true,
+          activo: true,
+          rol: true,
+          permisos: true,
+          createdAt: true
+        }
+      })
+
+      return handleCORS(NextResponse.json(admin, { status: 201 }))
     }
 
     // POST /api/security/change-password - Cambiar contraseña (PROTEGIDO)
