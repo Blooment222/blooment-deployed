@@ -192,12 +192,10 @@ export default function SecurityPage() {
     if (!isSuperAdmin) return false
     
     const isTargetFundador = EMAILS_FUNDADORES.includes(admin.email?.toLowerCase())
-    const isSelf = admin.email?.toLowerCase() === user?.email?.toLowerCase()
     
-    // Fundadores entre sí: solo auto-eliminación
+    // Fundadores solo pueden ser eliminados por otros fundadores
     if (isTargetFundador) {
-      // Solo el propio fundador puede eliminarse
-      return isSelf && isFundador
+      return isFundador // Solo Diego puede eliminar a Maira y viceversa
     }
     
     // Si eres fundador, puedes eliminar a cualquier otro (SuperAdmin o colaborador)

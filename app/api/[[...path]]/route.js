@@ -531,15 +531,14 @@ async function handleRoute(request, { params }) {
 
       const isTargetFundador = EMAILS_FUNDADORES.includes(targetAdmin.email?.toLowerCase())
       const isCurrentFundador = EMAILS_FUNDADORES.includes(currentAdmin.email?.toLowerCase())
-      const isSelf = targetAdmin.id === currentAdmin.id
 
-      // Regla: Fundadores solo pueden eliminarse a sí mismos
-      if (isTargetFundador && (!isSelf || !isCurrentFundador)) {
-        return handleCORS(NextResponse.json({ error: "Los fundadores solo pueden eliminarse a sí mismos" }, { status: 403 }))
+      // Regla: Fundadores solo pueden ser eliminados por otros fundadores
+      if (isTargetFundador && !isCurrentFundador) {
+        return handleCORS(NextResponse.json({ error: "Solo los fundadores pueden eliminar a otros fundadores" }, { status: 403 }))
       }
 
-      // Regla: SuperAdmins no pueden eliminar otros SuperAdmins (excepto auto-eliminación)
-      if (targetAdmin.rol === 'superadmin' && !isSelf) {
+      // Regla: SuperAdmins normales no pueden eliminar otros SuperAdmins
+      if (targetAdmin.rol === 'superadmin' && !isTargetFundador && !isCurrentFundador) {
         return handleCORS(NextResponse.json({ error: "No puedes eliminar a otro SuperAdmin" }, { status: 403 }))
       }
 
