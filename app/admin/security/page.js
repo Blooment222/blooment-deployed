@@ -418,8 +418,8 @@ export default function SecurityPage() {
 
       {/* Dialog: Agregar Colaborador */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto mx-4 sm:mx-auto">
+          <DialogHeader className="sticky top-0 bg-white pb-2 z-10">
             <DialogTitle>Agregar Colaborador</DialogTitle>
             <DialogDescription>Crea una cuenta con permisos limitados</DialogDescription>
           </DialogHeader>
@@ -501,7 +501,7 @@ export default function SecurityPage() {
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="sticky bottom-0 bg-white pt-4 border-t mt-4">
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancelar
               </Button>
