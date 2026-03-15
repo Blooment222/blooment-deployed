@@ -137,14 +137,22 @@ function DetallesEntregaContent() {
   // Función para seleccionar un contacto guardado
   const seleccionarContacto = (contacto) => {
     console.log('✅ Contacto seleccionado:', contacto.nombre)
+    console.log('📍 Dirección del contacto:', contacto.direccion)
     setFormData({
       ...formData,
       nombre_destinatario: contacto.nombre,
       telefono_destinatario: contacto.telefono,
-      direccion: contacto.direccion || formData.direccion
+      direccion: contacto.direccion || '',
+      coordenadas: contacto.coordenadas || null
     })
     setMostrarContactos(false)
   }
+  
+  // Verificar si el contacto guardado tiene dirección
+  const contactoTieneDireccion = tipoDestinatario === 'guardado' && 
+    !mostrarContactos && 
+    formData.nombre_destinatario && 
+    formData.direccion
 
   // Manejo de autenticación - SIN cierre automático de sesión
   useEffect(() => {
@@ -224,35 +232,55 @@ function DetallesEntregaContent() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Tarjeta de Dirección - LA MÁS GRANDE Y VISUAL */}
-        <Card className="p-6 border-2 border-[#F5B6C6] border-opacity-30 bg-gradient-to-br from-pink-50 to-white">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-full bg-[#F5B6C6] flex items-center justify-center">
-              <MapPin className="w-6 h-6 text-white" />
+        {/* Tarjeta de Dirección - Solo mostrar si es "Alguien Nuevo" o si el contacto NO tiene dirección */}
+        {(tipoDestinatario === 'nuevo' || tipoDestinatario === null || (tipoDestinatario === 'guardado' && !contactoTieneDireccion)) && (
+          <Card className="p-6 border-2 border-[#F5B6C6] border-opacity-30 bg-gradient-to-br from-pink-50 to-white">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-[#F5B6C6] flex items-center justify-center">
+                <MapPin className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-[#F5B6C6]">Dirección de Entrega</h2>
+                <p className="text-xs text-gray-600">¿A dónde enviamos las flores?</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-[#F5B6C6]">Dirección de Entrega</h2>
-              <p className="text-xs text-gray-600">¿A dónde enviamos las flores?</p>
+            
+            <MapboxAutocomplete
+              value={formData.direccion}
+              onChange={(value) => setFormData({ ...formData, direccion: value })}
+              onAddressSelect={(addressData) => {
+                setFormData({
+                  ...formData,
+                  direccion: addressData.fullAddress,
+                  coordenadas: {
+                    lat: addressData.latitude,
+                    lng: addressData.longitude
+                  }
+                })
+              }}
+              placeholder="Ej: Av. Insurgentes Sur 1234, Col. Del Valle, CDMX"
+              className="h-12 text-base"
+            />
+          </Card>
+        )}
+        
+        {/* Mostrar dirección del contacto guardado (solo lectura) */}
+        {contactoTieneDireccion && (
+          <Card className="p-6 border-2 border-green-200 bg-gradient-to-br from-green-50 to-white">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
+                <MapPin className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-green-600">Dirección de Entrega</h2>
+                <p className="text-xs text-gray-600">Usando la dirección del contacto guardado</p>
+              </div>
             </div>
-          </div>
-          
-          <MapboxAutocomplete
-            value={formData.direccion}
-            onChange={(value) => setFormData({ ...formData, direccion: value })}
-            onAddressSelect={(addressData) => {
-              setFormData({
-                ...formData,
-                direccion: addressData.fullAddress,
-                coordenadas: {
-                  lat: addressData.latitude,
-                  lng: addressData.longitude
-                }
-              })
-            }}
-            placeholder="Ej: Av. Insurgentes Sur 1234, Col. Del Valle, CDMX"
-            className="h-12 text-base"
-          />
-        </Card>
+            <div className="bg-white rounded-lg p-4 border border-green-200">
+              <p className="text-gray-700 font-medium">{formData.direccion}</p>
+            </div>
+          </Card>
+        )}
 
         {/* Tarjeta de Datos del Destinatario - MEJORADA CON SISTEMA DE 2 PASOS */}
         <Card className="p-5 border-[#F5B6C6] border-opacity-20">
