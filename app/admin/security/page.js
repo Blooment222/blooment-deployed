@@ -167,11 +167,23 @@ export default function SecurityPage() {
     // Solo SuperAdmins pueden editar
     if (!isSuperAdmin) return false
     
-    // NO se puede editar a otros SuperAdmins
-    if (admin.rol === 'superadmin') return false
+    const isTargetFundador = EMAILS_FUNDADORES.includes(admin.email?.toLowerCase())
     
-    // SÍ se puede editar colaboradores
-    return true
+    // Si el objetivo es un fundador, solo otro fundador puede editarlo
+    if (isTargetFundador && !isFundador) return false
+    
+    // Fundadores pueden editar a cualquiera (excepto al otro fundador)
+    if (isFundador) {
+      // No puedes editar al otro fundador
+      const isSelf = admin.email?.toLowerCase() === user?.email?.toLowerCase()
+      if (isTargetFundador && !isSelf) return false
+      return true
+    }
+    
+    // SuperAdmins normales pueden editar colaboradores
+    if (admin.rol === 'colaborador') return true
+    
+    return false
   }
 
   // Función para verificar si se puede eliminar un usuario
@@ -180,16 +192,21 @@ export default function SecurityPage() {
     if (!isSuperAdmin) return false
     
     const isTargetFundador = EMAILS_FUNDADORES.includes(admin.email?.toLowerCase())
-    const isTargetSuperAdmin = admin.rol === 'superadmin'
     const isSelf = admin.email?.toLowerCase() === user?.email?.toLowerCase()
     
-    // Si es un SuperAdmin/Fundador, solo puede eliminarse a sí mismo
-    if (isTargetSuperAdmin || isTargetFundador) {
-      return isSelf // Solo mostrar botón en tu propia tarjeta
+    // Fundadores entre sí: solo auto-eliminación
+    if (isTargetFundador) {
+      // Solo el propio fundador puede eliminarse
+      return isSelf && isFundador
     }
     
-    // Colaboradores pueden ser eliminados por SuperAdmins
-    return true
+    // Si eres fundador, puedes eliminar a cualquier otro (SuperAdmin o colaborador)
+    if (isFundador) return true
+    
+    // SuperAdmins normales solo pueden eliminar colaboradores
+    if (admin.rol === 'colaborador') return true
+    
+    return false
   }
 
   if (loading) {
