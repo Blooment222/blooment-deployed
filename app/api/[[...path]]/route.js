@@ -408,15 +408,17 @@ async function handleRoute(request, { params }) {
       // Hashear contraseña
       const hashedPassword = await hashPassword(body.password)
 
-      // Crear colaborador
+      // Crear colaborador o SuperAdmin
       const admin = await prisma.administrador.create({
         data: {
           nombre: body.nombre,
           email: body.email.toLowerCase(),
           password: hashedPassword,
           activo: true,
-          rol: 'colaborador',
-          permisos: body.permisos || '{"dashboard":true,"productos":true,"pedidos":true,"clientes":false,"cupones":false,"finanzas":false}'
+          rol: body.rol || 'colaborador',
+          permisos: body.rol === 'superadmin' 
+            ? '{"dashboard":true,"productos":true,"pedidos":true,"clientes":true,"cupones":true,"finanzas":true,"seguridad":true}'
+            : (body.permisos || '{"dashboard":true,"productos":true,"pedidos":true,"clientes":false,"cupones":false,"finanzas":false}')
         },
         select: {
           id: true,
@@ -428,6 +430,21 @@ async function handleRoute(request, { params }) {
           createdAt: true
         }
       })
+
+      // Verificar límite de SuperAdmins si se está creando uno
+      if (body.rol === 'superadmin') {
+        const superadminCount = await prisma.administrador.count({
+          where: { rol: 'superadmin', activo: true }
+        })
+        if (superadminCount > 4) {
+          // Revertir - desactivar el recién creado
+          await prisma.administrador.update({
+            where: { id: admin.id },
+            data: { activo: false }
+          })
+          return handleCORS(NextResponse.json({ error: "Límite de 4 SuperAdmins alcanzado" }, { status: 400 }))
+        }
+      }
 
       return handleCORS(NextResponse.json(admin, { status: 201 }))
     }
