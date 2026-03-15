@@ -38,12 +38,17 @@ function OrderTimeline({ estado }) {
   const activeIndex = currentStepIndex !== -1 ? currentStepIndex : 0
 
   return (
-    <div className="py-6 px-4">
-      <div className="relative">
-        <div className="absolute top-8 left-0 right-0 h-1 bg-gray-200" style={{ left: 'calc(12.5%)', right: 'calc(12.5%)', width: '75%' }}></div>
-        <div className="absolute top-8 h-1 bg-[#F5B6C6] transition-all duration-700 ease-in-out" style={{ left: 'calc(12.5%)', width: `${(activeIndex / (steps.length - 1)) * 75}%` }}></div>
+    <div className="py-6 px-2 sm:px-6 w-full">
+      <div className="relative max-w-full mx-auto">
+        {/* Línea de fondo */}
+        <div className="absolute top-6 sm:top-7 left-[12%] right-[12%] h-0.5 sm:h-1 bg-gray-200"></div>
+        {/* Línea de progreso */}
+        <div 
+          className="absolute top-6 sm:top-7 left-[12%] h-0.5 sm:h-1 bg-[#F5B6C6] transition-all duration-700 ease-in-out" 
+          style={{ width: `${(activeIndex / (steps.length - 1)) * 76}%` }}
+        ></div>
 
-        <div className="relative flex justify-between">
+        <div className="relative flex justify-between items-start gap-1 sm:gap-2">
           {steps.map((step, index) => {
             const StepIcon = step.icon
             const isCompleted = index < activeIndex
@@ -51,22 +56,22 @@ function OrderTimeline({ estado }) {
             const isFuture = index > activeIndex
             
             return (
-              <div key={step.id} className="flex flex-col items-center" style={{ width: '25%' }}>
-                <div className="relative">
+              <div key={step.id} className="flex flex-col items-center flex-1 min-w-0">
+                <div className="relative flex-shrink-0">
                   <div className={`
-                    w-16 h-16 rounded-full flex items-center justify-center border-4 transition-all duration-500 relative z-10
+                    w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center border-3 sm:border-4 transition-all duration-500 relative z-10
                     ${isCompleted ? 'bg-[#F5B6C6] border-[#F5B6C6] shadow-lg' : ''}
                     ${isCurrent ? 'bg-[#F5B6C6] border-[#F5B6C6] shadow-xl animate-pulse' : ''}
                     ${isFuture ? 'bg-white border-gray-200' : ''}
                   `}>
-                    <StepIcon className={`w-7 h-7 transition-colors duration-500 ${isCompleted || isCurrent ? 'text-white' : 'text-gray-300'}`} />
+                    <StepIcon className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 transition-colors duration-500 ${isCompleted || isCurrent ? 'text-white' : 'text-gray-300'}`} />
                   </div>
                   {isCurrent && (
                     <div className="absolute inset-0 rounded-full bg-[#F5B6C6] opacity-20 animate-ping"></div>
                   )}
                 </div>
-                <div className="mt-3 text-center">
-                  <p className={`text-xs font-semibold ${isCompleted || isCurrent ? 'text-[#F5B6C6]' : 'text-gray-400'}`}>
+                <div className="mt-2 sm:mt-3 text-center w-full px-0.5">
+                  <p className={`text-[10px] sm:text-xs font-semibold leading-tight break-words ${isCompleted || isCurrent ? 'text-[#F5B6C6]' : 'text-gray-400'}`}>
                     {step.label}
                   </p>
                 </div>
