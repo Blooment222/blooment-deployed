@@ -36,6 +36,7 @@ function AdminLayoutContent({ children }) {
     { name: 'Clientes', href: '/admin/clientes', icon: Users },
     { name: 'Cupones', href: '/admin/cupones', icon: Ticket },
     { name: 'Finanzas', href: '/admin/finanzas', icon: TrendingUp },
+    { name: 'Seguridad', href: '/admin/security', icon: Shield },
   ]
 
   // Si estamos en la página de login, renderizar directamente sin layout

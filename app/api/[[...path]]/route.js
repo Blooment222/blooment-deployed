@@ -58,9 +58,23 @@ async function handleRoute(request, { params }) {
         ))
       }
 
+      // Whitelist de administradores permitidos
+      const ADMIN_WHITELIST = [
+        'diegoah1107@gmail.com',
+        'maireyesguevara@gmail.com'
+      ]
+
+      // Verificar si el email está en la whitelist
+      if (!ADMIN_WHITELIST.includes(body.email.toLowerCase())) {
+        return handleCORS(NextResponse.json(
+          { error: "Acceso no autorizado" },
+          { status: 403 }
+        ))
+      }
+
       // Buscar administrador
       const admin = await prisma.administrador.findUnique({
-        where: { email: body.email }
+        where: { email: body.email.toLowerCase() }
       })
 
       if (!admin) {
